@@ -1,101 +1,120 @@
-#include <iostream>
 #include <SDL.h>
+#include <iostream>
+#include <cmath>
 
-using namespace std;
+// Define the dimensions of the window
+const int WINDOW_WIDTH = 800;
+const int WINDOW_HEIGHT = 600;
 
-const int SCREEN_WIDTH = 800;
-const int SCREEN_HEIGHT = 600;
-const char* WINDOW_TITLE = "Hello World!";
+// Define the dimensions and initial position of the draggable object
+const int OBJECT_WIDTH = 50;
+const int OBJECT_HEIGHT = 50;
+int objectX = 100;
+int objectY = 100;
 
-void logErrorAndExit(const char* msg, const char* error)
-{
-    SDL_LogMessage(SDL_LOG_CATEGORY_APPLICATION, SDL_LOG_PRIORITY_ERROR, "%s: %s", msg, error);
-    SDL_Quit();
+// Flag to track whether the object is being dragged
+bool isDragging = false;
+
+// Mouse position variables
+int mouseDownX = 0;
+int mouseDownY = 0;
+int mouseUpX = 0;
+int mouseUpY = 0;
+
+// SDL window and renderer
+SDL_Window* window = nullptr;
+SDL_Renderer* renderer = nullptr;
+
+// Initialize SDL
+bool initSDL() {
+    if (SDL_Init(SDL_INIT_VIDEO) < 0) {
+        std::cerr << "SDL initialization failed: " << SDL_GetError() << std::endl;
+        return false;
+    }
+
+    // Create window
+    window = SDL_CreateWindow("Drag and Launch", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, WINDOW_WIDTH, WINDOW_HEIGHT, SDL_WINDOW_SHOWN);
+    if (window == nullptr) {
+        std::cerr << "Window creation failed: " << SDL_GetError() << std::endl;
+        return false;
+    }
+
+    // Create renderer
+    renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
+    if (renderer == nullptr) {
+        std::cerr << "Renderer creation failed: " << SDL_GetError() << std::endl;
+        return false;
+    }
+
+    return true;
 }
 
-SDL_Window* initSDL(int SCREEN_WIDTH, int SCREEN_HEIGHT, const char* WINDOW_TITLE)
-{
-    if (SDL_Init(SDL_INIT_EVERYTHING) != 0)
-        logErrorAndExit("SDL_Init", SDL_GetError());
+// Handle mouse events
+void handleMouseEvent(SDL_Event& event) {
+    if (event.type == SDL_MOUSEBUTTONDOWN) {
+        isDragging = true;
+        SDL_GetMouseState(&mouseDownX, &mouseDownY);
+    } else if (event.type == SDL_MOUSEBUTTONUP && isDragging) {
+        isDragging = false;
+        SDL_GetMouseState(&mouseUpX, &mouseUpY);
 
-    SDL_Window* window = SDL_CreateWindow(WINDOW_TITLE, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
-    //full screen
-    //window = SDL_CreateWindow(WINDOW_TITLE, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_FULLSCREEN_DESKTOP);
-    if (window == nullptr) logErrorAndExit("CreateWindow", SDL_GetError());
+        // Calculate velocity based on the distance dragged
+        int dx = mouseUpX - mouseDownX;
+        int dy = mouseUpY - mouseDownY;
+        objectX = mouseDownX - OBJECT_WIDTH / 2;
+        objectY = mouseDownY - OBJECT_HEIGHT / 2;
 
-    return window;
+        // Launch the object based on the drag distance
+        double velocity = sqrt(dx * dx + dy * dy) / 10.0;
+        double angle = atan2(dy, dx);
+        double velX = velocity * cos(angle);
+        double velY = velocity * sin(angle);
+
+        // Apply the calculated velocity
+        objectX += static_cast<int>(velX);
+        objectY += static_cast<int>(velY);
+    }
 }
 
-SDL_Renderer* createRenderer(SDL_Window* window)
-{
-    SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED |
-                                              SDL_RENDERER_PRESENTVSYNC);
-    //Khi chạy trong máy ảo (ví dụ phòng máy ở trường)
-    //renderer = SDL_CreateSoftwareRenderer(SDL_GetWindowSurface(window));
+// Render the scene
+void render() {
+    SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+    SDL_RenderClear(renderer);
 
-    if (renderer == nullptr) logErrorAndExit("CreateRenderer", SDL_GetError());
+    // Draw the draggable object
+    SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
+    SDL_Rect objectRect = {objectX, objectY, OBJECT_WIDTH, OBJECT_HEIGHT};
+    SDL_RenderFillRect(renderer, &objectRect);
 
-    SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "linear");
-    SDL_RenderSetLogicalSize(renderer, SCREEN_WIDTH, SCREEN_HEIGHT);
-
-    return renderer;
+    SDL_RenderPresent(renderer);
 }
 
-void quitSDL(SDL_Window* window, SDL_Renderer* renderer)
-{
+// Clean up SDL resources
+void cleanupSDL() {
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
     SDL_Quit();
 }
 
-void waitUntilKeyPressed()
-{
-    SDL_Event e;
-    while (true) {
-        if ( SDL_PollEvent(&e) != 0 &&
-             (e.type == SDL_KEYDOWN || e.type == SDL_QUIT) )
-            return;
-        SDL_Delay(100);
+int main(int argc, char* argv[]) {
+    if (!initSDL()) {
+        return -1;
     }
-}
 
-void drawSomething(SDL_Window* window, SDL_Renderer* renderer) {
-    SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);   // white
-    SDL_RenderDrawPoint(renderer, SCREEN_WIDTH/2, SCREEN_HEIGHT/2);
-    SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);   // red
-    SDL_RenderDrawLine(renderer, 100, 100, 200, 200);
-    SDL_Rect filled_rect;
-    filled_rect.x = SCREEN_WIDTH - 400;
-    filled_rect.y = SCREEN_HEIGHT - 150;
-    filled_rect.w = 320;
-    filled_rect.h = 100;
-    SDL_SetRenderDrawColor(renderer, 0, 255, 0, 255); // green
-    SDL_RenderFillRect(renderer, &filled_rect);
-}
+    bool quit = false;
+    SDL_Event event;
 
-int main(int argc, char* argv[])
-{
-    //Khởi tạo môi trường đồ họa
-    SDL_Window* window = initSDL(SCREEN_WIDTH, SCREEN_HEIGHT, WINDOW_TITLE);
-    SDL_Renderer* renderer = createRenderer(window);
+    while (!quit) {
+        while (SDL_PollEvent(&event) != 0) {
+            if (event.type == SDL_QUIT) {
+                quit = true;
+            }
+            handleMouseEvent(event);
+        }
 
-    //Xóa màn hình
-    SDL_RenderClear(renderer);
+        render();
+    }
 
-    //Vẽ gì đó
-    drawSomething(window, renderer);
-
-    //Hiện bản vẽ ra màn hình
-    //Khi chạy tại môi trường bình thường
-    SDL_RenderPresent(renderer);
-    //Khi chạy trong máy ảo (ví dụ phòng máy ở trường)
-    //SDL_UpdateWindowSurface(window);
-
-    //Đợi phím bất kỳ trước khi đóng môi trường đồ họa và kết thúc chương trình
-    waitUntilKeyPressed();
-    quitSDL(window, renderer);
+    cleanupSDL();
     return 0;
 }
-
-
-
