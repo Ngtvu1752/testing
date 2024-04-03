@@ -400,7 +400,8 @@
 	<iostream>
 	<SDL.h>
 
-1708186046 source:d:\ngtvu\c++\projectsdl2\testing\untitled1.cpp
-	<iostream>
+1710494106 source:d:\ngtvu\c++\projectsdl2\testing\untitled1.cpp
 	<SDL.h>
+	<iostream>
+	<cmath>
 

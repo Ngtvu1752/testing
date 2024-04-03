@@ -1,0 +1,120 @@
+#include <SDL.h>
+#include <iostream>
+#include <cmath>
+
+// Define the dimensions of the window
+const int WINDOW_WIDTH = 800;
+const int WINDOW_HEIGHT = 600;
+
+// Define the dimensions and initial position of the draggable object
+const int OBJECT_WIDTH = 50;
+const int OBJECT_HEIGHT = 50;
+int objectX = 100;
+int objectY = 100;
+
+// Flag to track whether the object is being dragged
+bool isDragging = false;
+
+// Mouse position variables
+int mouseDownX = 0;
+int mouseDownY = 0;
+int mouseUpX = 0;
+int mouseUpY = 0;
+
+// SDL window and renderer
+SDL_Window* window = nullptr;
+SDL_Renderer* renderer = nullptr;
+
+// Initialize SDL
+bool initSDL() {
+    if (SDL_Init(SDL_INIT_VIDEO) < 0) {
+        std::cerr << "SDL initialization failed: " << SDL_GetError() << std::endl;
+        return false;
+    }
+
+    // Create window
+    window = SDL_CreateWindow("Drag and Launch", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, WINDOW_WIDTH, WINDOW_HEIGHT, SDL_WINDOW_SHOWN);
+    if (window == nullptr) {
+        std::cerr << "Window creation failed: " << SDL_GetError() << std::endl;
+        return false;
+    }
+
+    // Create renderer
+    renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
+    if (renderer == nullptr) {
+        std::cerr << "Renderer creation failed: " << SDL_GetError() << std::endl;
+        return false;
+    }
+
+    return true;
+}
+
+// Handle mouse events
+void handleMouseEvent(SDL_Event& event) {
+    if (event.type == SDL_MOUSEBUTTONDOWN) {
+        isDragging = true;
+        SDL_GetMouseState(&mouseDownX, &mouseDownY);
+    } else if (event.type == SDL_MOUSEBUTTONUP && isDragging) {
+        isDragging = false;
+        SDL_GetMouseState(&mouseUpX, &mouseUpY);
+
+        // Calculate velocity based on the distance dragged
+        int dx = mouseUpX - mouseDownX;
+        int dy = mouseUpY - mouseDownY;
+        objectX = mouseDownX - OBJECT_WIDTH / 2;
+        objectY = mouseDownY - OBJECT_HEIGHT / 2;
+
+        // Launch the object based on the drag distance
+        double velocity = sqrt(dx * dx + dy * dy) / 10.0;
+        double angle = atan2(dy, dx);
+        double velX = velocity * cos(angle);
+        double velY = velocity * sin(angle);
+
+        // Apply the calculated velocity
+        objectX += static_cast<int>(velX);
+        objectY += static_cast<int>(velY);
+    }
+}
+
+// Render the scene
+void render() {
+    SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+    SDL_RenderClear(renderer);
+
+    // Draw the draggable object
+    SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
+    SDL_Rect objectRect = {objectX, objectY, OBJECT_WIDTH, OBJECT_HEIGHT};
+    SDL_RenderFillRect(renderer, &objectRect);
+
+    SDL_RenderPresent(renderer);
+}
+
+// Clean up SDL resources
+void cleanupSDL() {
+    SDL_DestroyRenderer(renderer);
+    SDL_DestroyWindow(window);
+    SDL_Quit();
+}
+
+int main(int argc, char) {
+    if (!initSDL()) {
+        return -1;
+    }
+
+    bool quit = false;
+    SDL_Event event;
+
+    while (!quit) {
+        while (SDL_PollEvent(&event) != 0) {
+            if (event.type == SDL_QUIT) {
+                quit = true;
+            }
+            handleMouseEvent(event);
+        }
+
+        render();
+    }
+
+    cleanupSDL();
+    return 0;
+}
