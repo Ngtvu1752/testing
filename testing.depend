@@ -400,8 +400,21 @@
 	<iostream>
 	<SDL.h>
 
-1710494106 source:d:\ngtvu\c++\projectsdl2\testing\untitled1.cpp
+1713365495 source:d:\ngtvu\c++\projectsdl2\testing\untitled1.cpp
 	<SDL.h>
-	<iostream>
-	<cmath>
+	<SDL_image.h>
+	<stdio.h>
+	<string>
+	<vector>
+
+1704144973 c:\users\ngtvu\downloads\sdl2_image-devel-2.8.2-mingw\sdl2_image-2.8.2\x86_64-w64-mingw32\include\sdl2\sdl_image.h
+	"SDL.h"
+	"SDL_version.h"
+	"begin_code.h"
+	"close_code.h"
+
+1710574259 c:\users\ngtvu\downloads\sdl2_ttf-devel-2.22.0-mingw\sdl2_ttf-2.22.0\x86_64-w64-mingw32\include\sdl2\sdl_ttf.h
+	"SDL.h"
+	"begin_code.h"
+	"close_code.h"
 
