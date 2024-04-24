@@ -121,6 +121,7 @@ int main()
     //cout<<delete_char(s, 'g');
 //    cout<<pad_right(s,8);
     cout<<pad_left(s,8);
+    delete s;
 }
 
 
